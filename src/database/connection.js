@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 const redis = require('redis');
+const { logger } = require('../utils/logger');
 
 let dbPool = null;
 let redisClient = null;
@@ -8,8 +9,8 @@ let redisClient = null;
 // 创建数据库连接池
 async function connectDB() {
   try {
-    console.log('正在连接数据库...');
-    console.log('数据库配置:', {
+    logger.info('正在连接数据库...');
+    logger.info('数据库配置:', {
       host: process.env.DB_HOST,
       port: process.env.DB_PORT,
       user: process.env.DB_USER,
@@ -26,7 +27,6 @@ async function connectDB() {
       multipleStatements: true,
       connectionLimit: 10,
       queueLimit: 0,
-      // 修复：移除不支持的 acquireTimeout，使用 timeout
       timeout: 60000,
       waitForConnections: true,
       reconnect: true
@@ -37,10 +37,10 @@ async function connectDB() {
     await connection.ping();
     connection.release();
     
-    console.log('MySQL数据库连接成功');
+    logger.info('MySQL数据库连接成功');
     return dbPool;
   } catch (error) {
-    console.error('数据库连接失败:', error);
+    logger.error('数据库连接失败:', error);
     throw error;
   }
 }
@@ -49,9 +49,14 @@ async function connectDB() {
 async function connectRedis() {
   try {
     if (!process.env.REDIS_HOST) {
-      console.log('Redis配置未设置，跳过Redis连接');
+      logger.info('Redis配置未设置，跳过Redis连接');
       return null;
     }
+
+    logger.info('Redis配置:', {
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT
+    });
 
     redisClient = redis.createClient({
       host: process.env.REDIS_HOST,
@@ -60,14 +65,14 @@ async function connectRedis() {
     });
 
     redisClient.on('error', (err) => {
-      console.error('Redis连接错误:', err);
+      logger.error('Redis连接错误:', err);
     });
 
     await redisClient.connect();
-    console.log('Redis连接成功');
+    logger.info('Redis连接成功');
     return redisClient;
   } catch (error) {
-    console.error('Redis连接失败:', error);
+    logger.error('Redis连接失败:', error);
     return null;
   }
 }
@@ -75,6 +80,7 @@ async function connectRedis() {
 // 获取数据库连接
 function getDB() {
   if (!dbPool) {
+    logger.error('尝试获取数据库连接失败: 数据库未连接');
     throw new Error('数据库未连接');
   }
   return dbPool;
@@ -82,6 +88,9 @@ function getDB() {
 
 // 获取Redis连接
 function getRedis() {
+  if (!redisClient) {
+    logger.warn('尝试获取Redis连接，但Redis未连接');
+  }
   return redisClient;
 }
 

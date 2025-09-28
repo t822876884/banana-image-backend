@@ -11,10 +11,24 @@ async function startServer() {
   try {
     logger.info('正在启动服务器...');
     
-    // 只连接数据库，不执行初始化
+    // 连接数据库，添加重试逻辑
     logger.info('连接数据库...');
-    await connectDB();
-    logger.info('数据库连接成功');
+    let retries = 5;
+    while (retries > 0) {
+      try {
+        await connectDB();
+        logger.info('数据库连接成功');
+        break;
+      } catch (dbError) {
+        retries--;
+        if (retries === 0) {
+          throw dbError;
+        }
+        logger.warn(`数据库连接失败，剩余重试次数: ${retries}`);
+        // 等待3秒后重试
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
     
     // 启动服务器
     app.listen(PORT, () => {
@@ -49,4 +63,5 @@ process.on('unhandledRejection', (reason, promise) => {
   logger.error('未处理的Promise拒绝:', reason);
 });
 
+// 启动服务器
 startServer();
