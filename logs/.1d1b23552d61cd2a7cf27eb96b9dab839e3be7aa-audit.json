@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/bertram/Documents/work/weichat/banana-image-backend/logs/.1d1b23552d61cd2a7cf27eb96b9dab839e3be7aa-audit.json",
+    "files": [
+        {
+            "date": 1759029048122,
+            "name": "/Users/bertram/Documents/work/weichat/banana-image-backend/logs/2025-09-28-app.log",
+            "hash": "b6286584ab95ff66a5dec1faa2702622f6a76975d9e880563af7e6bdd3e1ad60"
+        }
+    ],
+    "hashType": "sha256"
+}

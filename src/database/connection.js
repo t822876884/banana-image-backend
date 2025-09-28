@@ -1,0 +1,93 @@
+require('dotenv').config();
+const mysql = require('mysql2/promise');
+const redis = require('redis');
+
+let dbPool = null;
+let redisClient = null;
+
+// 创建数据库连接池
+async function connectDB() {
+  try {
+    console.log('正在连接数据库...');
+    console.log('数据库配置:', {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      database: process.env.DB_NAME
+    });
+
+    dbPool = mysql.createPool({
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'banana_image',
+      charset: 'utf8mb4',
+      multipleStatements: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      // 修复：移除不支持的 acquireTimeout，使用 timeout
+      timeout: 60000,
+      waitForConnections: true,
+      reconnect: true
+    });
+
+    // 测试连接
+    const connection = await dbPool.getConnection();
+    await connection.ping();
+    connection.release();
+    
+    console.log('MySQL数据库连接成功');
+    return dbPool;
+  } catch (error) {
+    console.error('数据库连接失败:', error);
+    throw error;
+  }
+}
+
+// 创建Redis连接
+async function connectRedis() {
+  try {
+    if (!process.env.REDIS_HOST) {
+      console.log('Redis配置未设置，跳过Redis连接');
+      return null;
+    }
+
+    redisClient = redis.createClient({
+      host: process.env.REDIS_HOST,
+      port: process.env.REDIS_PORT,
+      password: process.env.REDIS_PASSWORD
+    });
+
+    redisClient.on('error', (err) => {
+      console.error('Redis连接错误:', err);
+    });
+
+    await redisClient.connect();
+    console.log('Redis连接成功');
+    return redisClient;
+  } catch (error) {
+    console.error('Redis连接失败:', error);
+    return null;
+  }
+}
+
+// 获取数据库连接
+function getDB() {
+  if (!dbPool) {
+    throw new Error('数据库未连接');
+  }
+  return dbPool;
+}
+
+// 获取Redis连接
+function getRedis() {
+  return redisClient;
+}
+
+module.exports = {
+  connectDB,
+  connectRedis,
+  getDB,
+  getRedis
+};

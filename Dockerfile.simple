@@ -1,0 +1,46 @@
+# 简化版 Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+# 设置 npm 镜像源
+RUN npm config set registry https://registry.npmmirror.com
+
+# 安装基本的构建工具
+RUN apk update && apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/cache/apk/*
+
+# 复制 package.json 和 package-lock.json
+COPY package*.json ./
+
+# 安装依赖
+RUN npm ci --only=production && npm cache clean --force
+
+# 复制应用代码
+COPY . .
+
+# 创建上传目录
+RUN mkdir -p uploads/images
+
+# 创建非 root 用户
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# 设置目录权限
+RUN chown -R nodejs:nodejs /app
+
+# 切换到非 root 用户
+USER nodejs
+
+# 暴露端口
+EXPOSE 3000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+
+# 启动应用
+CMD ["npm", "start"]

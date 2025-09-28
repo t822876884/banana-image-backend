@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # 应用服务
+  app:
+    image: banana-image-backend:latest
+    container_name: banana-image-backend-prod
+    restart: unless-stopped
+    ports:
+      - "53001:3000"
+    environment:
+      - NODE_ENV=production
+      # 数据库配置 - 使用您提供的 MySQL 配置
+      - DB_HOST=host.docker.internal
+      - DB_PORT=53306
+      - DB_USER=root
+      - DB_PASSWORD=Wrfwqyz530312...
+      - DB_NAME=banana_image
+      # Redis 配置 - 使用您提供的 Redis 配置
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PORT=56379
+      - REDIS_PASSWORD=Wrfwqyz530312...
+      # JWT配置
+      - JWT_SECRET=your_jwt_secret_key_here_make_it_long_and_random
+      - JWT_EXPIRES_IN=1h
+      - REFRESH_TOKEN_SECRET=your_refresh_token_secret_key_here_also_long_and_random
+      - REFRESH_TOKEN_EXPIRES_IN=7d
+      # 服务器配置
+      - PORT=53001
+      # Google AI API 配置
+      - GOOGLE_AI_API_KEY=AIzaSyDn3j0fK-1gtv0KESVOhfoA-xBv1XvmK_I
+      # 代理配置（如果需要）
+      - USE_PROXY=true
+      - PROXY_HOST=192.168.123.205
+      - PROXY_PORT=7890
+      # 文件上传配置
+      - UPLOAD_PATH=/app/uploads
+      - MAX_FILE_SIZE=10485760
+      - ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/webp,image/gif
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # 挂载本地 uploads 目录到容器（数据持久化）
+      - /volume1/docker/banana-img/uploads:/app/uploads
+      # 挂载日志目录
+      - /volume1/docker/banana-img/logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - banana-network
+
+networks:
+  banana-network:
+    driver: bridge

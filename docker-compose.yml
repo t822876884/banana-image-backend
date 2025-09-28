@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # 应用服务
+  app:
+    image: banana-image-backend:simple
+    container_name: banana-image-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      # 连接到宿主机的 MySQL 和 Redis 服务
+      - DB_HOST=host.docker.internal
+      - DB_PORT=3306
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PORT=6379
+      # 代理配置
+      - PROXY_HOST=host.docker.internal
+      - PROXY_PORT=7890
+      - USE_PROXY=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # 挂载本地 uploads 目录到容器
+      - /Users/bertram/Documents/tmp/banana/uploads:/app/uploads
+      # 挂载日志目录
+      - /Users/bertram/Documents/tmp/banana/logs:/app/logs
+    networks:
+      - banana-network
+
+networks:
+  banana-network:
+    driver: bridge
