@@ -2,14 +2,33 @@
   "version": 2,
   "builds": [
     {
-      "src": "start.js",
+      "src": "vercel-entry.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
+      "src": "/api-docs(.*)",
+      "dest": "vercel-entry.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "vercel-entry.js"
+    },
+    {
+      "src": "/health",
+      "dest": "vercel-entry.js"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "vercel-entry.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "src/app.js"
+      "dest": "vercel-entry.js"
     }
   ],
   "env": {

@@ -21,7 +21,11 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+app.set('trust proxy', 1);
 // 尝试连接数据库
+// 移除 app.js 中的数据库连接尝试，因为这会在 vercel-entry.js 中处理
+// 删除或注释掉以下代码块:
+/*
 (async () => {
   try {
     await connectDB();
@@ -30,6 +34,10 @@ const app = express();
     console.error('数据库连接失败:', error);
   }
 })();
+*/
+
+// 在文件末尾添加导出
+module.exports = app;
 
 // 安全中间件
 app.use(helmet({
@@ -130,5 +138,19 @@ app.use('*', (req, res) => {
 
 // 错误处理中间件
 app.use(errorHandler);
+// 未捕获的异常处理
+process.on('uncaughtException', (error) => {
+  console.error('未捕获的异常:', error);
+  // 不要在生产环境立即退出
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
+});
 
+// 未处理的 Promise 拒绝处理
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('未处理的 Promise 拒绝:', reason);
+});
+
+// 导出 app 实例
 module.exports = app;

@@ -7,7 +7,27 @@ let dbPool = null;
 let redisClient = null;
 
 // 创建数据库连接池
+// 在文件开头添加
+let isConnecting = false;
+let connectionPromise = null;
+
+// 修改 connectDB 函数
 async function connectDB() {
+  // 如果已经有连接或正在连接，避免重复连接
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+  
+  if (isConnecting) {
+    // 等待现有连接完成
+    while (isConnecting && !connectionPromise) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return connectionPromise;
+  }
+  
+  isConnecting = true;
+  
   try {
     logger.info('正在连接数据库...');
     logger.info('数据库配置:', {
@@ -28,8 +48,9 @@ async function connectDB() {
       connectionLimit: 10,
       queueLimit: 0,
       timeout: 60000,
-      waitForConnections: true,
-      reconnect: true
+      waitForConnections: true
+      // 移除不支持的选项
+      // reconnect: true
     });
 
     // 测试连接
@@ -38,10 +59,13 @@ async function connectDB() {
     connection.release();
     
     logger.info('MySQL数据库连接成功');
+    connectionPromise = Promise.resolve(dbPool);
     return dbPool;
   } catch (error) {
     logger.error('数据库连接失败:', error);
     throw error;
+  } finally {
+    isConnecting = false;
   }
 }
 
