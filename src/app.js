@@ -4,6 +4,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./config/swagger');
+const { connectDB } = require('./database/connection');
+
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -18,6 +20,16 @@ const settingsRoutes = require('./routes/settings');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
+
+// 尝试连接数据库
+(async () => {
+  try {
+    await connectDB();
+    console.log('数据库连接成功');
+  } catch (error) {
+    console.error('数据库连接失败:', error);
+  }
+})();
 
 // 安全中间件
 app.use(helmet({
