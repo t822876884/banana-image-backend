@@ -3,27 +3,28 @@ const mysql = require('mysql2/promise');
 const redis = require('redis');
 const { logger } = require('../utils/logger');
 
-let dbPool = null;
 let redisClient = null;
 
 // 创建数据库连接池
 // 在文件开头添加
+// 添加连接状态管理
+let dbPool = null;
 let isConnecting = false;
 let connectionPromise = null;
 
-// 修改 connectDB 函数
+// 优化数据库连接函数
 async function connectDB() {
-  // 如果已经有连接或正在连接，避免重复连接
-  if (connectionPromise) {
-    return connectionPromise;
+  // 如果已有连接，直接返回
+  if (dbPool) {
+    return dbPool;
   }
   
+  // 如果正在连接中，等待连接完成
   if (isConnecting) {
-    // 等待现有连接完成
-    while (isConnecting && !connectionPromise) {
+    while (isConnecting && !dbPool) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    return connectionPromise;
+    return dbPool;
   }
   
   isConnecting = true;
@@ -59,10 +60,10 @@ async function connectDB() {
     connection.release();
     
     logger.info('MySQL数据库连接成功');
-    connectionPromise = Promise.resolve(dbPool);
     return dbPool;
   } catch (error) {
     logger.error('数据库连接失败:', error);
+    dbPool = null; // 重置连接以便下次尝试
     throw error;
   } finally {
     isConnecting = false;

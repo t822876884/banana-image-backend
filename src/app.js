@@ -37,6 +37,8 @@ app.set('trust proxy', 1);
 */
 
 // 在文件末尾添加导出
+// 移除数据库连接尝试代码块
+// 确保在文件末尾导出app
 module.exports = app;
 
 // 安全中间件
